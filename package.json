@@ -1,0 +1,40 @@
+{
+  "name": "@agenteca/cli",
+  "version": "0.1.0",
+  "description": "ahub : installe et met à jour des paquets d'agents IA depuis des dépôts git vers Claude Code, Codex, GitHub Copilot et Cursor.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "bin": { "ahub": "./dist/bin.js" },
+  "main": "./dist/client.js",
+  "types": "./dist/client.d.ts",
+  "exports": {
+    ".": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
+    "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
+    "./schemas/cli-output.v1.schema.json": "./schemas/cli-output.v1.schema.json"
+  },
+  "files": ["dist", "schemas", "CHANGELOG.md"],
+  "repository": { "type": "git", "url": "git+https://github.com/agenteca/agenteca-cli.git" },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src test",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@agenteca/core": "^0.1.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "ajv": "^8.17.1",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^2.1.8"
+  }
+}

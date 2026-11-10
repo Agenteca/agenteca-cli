@@ -1,0 +1,1500 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agenteca/agenteca-cli/blob/main/schemas/cli-output.v1.schema.json",
+  "title": "Sortie de « ahub --json », contrat v1",
+  "description": "Enveloppe unique de toute sortie --json de la CLI ahub. Politique de version : un ajout de champ ou de commande incrémente la version mineure de schemaVersion (1.x) ; un retrait ou un changement de sens incrémente la version majeure et change le nom de ce fichier. Les consommateurs doivent ignorer les champs inconnus.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "command",
+    "ok",
+    "data",
+    "warnings",
+    "error"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "data": {},
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "error": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/error"
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "null"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "error": {
+            "$ref": "#/$defs/error"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "add"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/changeData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "install"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/changeData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "update"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/changeData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "remove"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/changeData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "init"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/initData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "list"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/listData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "outdated"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/outdatedData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "search"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/searchData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "info"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/infoData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "scan"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/scanData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "registry add"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/registryData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "registry remove"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/registryData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "registry list"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/registryListData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "registry export"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/registryExportData"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "version"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/versionData"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "warning": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": true
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "USAGE",
+            "MANIFEST_INVALID",
+            "LOCK_INVALID",
+            "LOCK_MISMATCH",
+            "NOT_FOUND",
+            "RESOLUTION_FAILED",
+            "GIT_FAILED",
+            "PACKAGE_INVALID",
+            "SCAN_BLOCKED",
+            "FILE_MODIFIED",
+            "CONFLICT",
+            "CONFIRMATION_REQUIRED",
+            "PLAN_CHANGED",
+            "NO_TARGET",
+            "UNSUPPORTED",
+            "REGISTRY_FAILED",
+            "INTERNAL"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {}
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": true
+    },
+    "finding": {
+      "type": "object",
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "pattern": "^AHUB-[A-Z][0-9]{3}$"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "warning",
+            "info"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ruleId",
+        "severity",
+        "path",
+        "line",
+        "column",
+        "message"
+      ],
+      "additionalProperties": true
+    },
+    "scan": {
+      "type": "object",
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "critical": {
+              "type": "integer"
+            },
+            "warning": {
+              "type": "integer"
+            },
+            "info": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "critical",
+            "warning",
+            "info"
+          ],
+          "additionalProperties": true
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        }
+      },
+      "required": [
+        "blocked",
+        "summary",
+        "findings"
+      ],
+      "additionalProperties": true
+    },
+    "contents": {
+      "type": "object",
+      "properties": {
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instructions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mcpServers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "skills",
+        "agents",
+        "commands",
+        "instructions",
+        "hooks",
+        "mcpServers"
+      ],
+      "additionalProperties": true
+    },
+    "plannedPackage": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "git",
+            "local"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "resolvedTag": {
+          "type": "string"
+        },
+        "direct": {
+          "type": "boolean"
+        },
+        "change": {
+          "enum": [
+            "added",
+            "updated",
+            "unchanged"
+          ]
+        },
+        "previousCommit": {
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "claude",
+              "codex",
+              "copilot",
+              "cursor"
+            ]
+          }
+        },
+        "contents": {
+          "$ref": "#/$defs/contents"
+        }
+      },
+      "required": [
+        "identity",
+        "name",
+        "source",
+        "direct",
+        "change",
+        "targets",
+        "contents"
+      ],
+      "additionalProperties": true
+    },
+    "changeData": {
+      "type": "object",
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "dryRun": {
+          "type": "boolean"
+        },
+        "planHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "scope": {
+          "enum": [
+            "project",
+            "user"
+          ]
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "claude",
+              "codex",
+              "copilot",
+              "cursor"
+            ]
+          }
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/plannedPackage"
+          }
+        },
+        "removedPackages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "create",
+                  "update",
+                  "unchanged",
+                  "conflict"
+                ]
+              },
+              "reason": {
+                "enum": [
+                  "modified",
+                  "unmanaged"
+                ]
+              },
+              "primitive": {
+                "type": "string"
+              },
+              "targets": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "claude",
+                    "codex",
+                    "copilot",
+                    "cursor"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "path",
+              "action",
+              "primitive",
+              "targets"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "removals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "remove",
+                  "conflict",
+                  "missing"
+                ]
+              }
+            },
+            "required": [
+              "path",
+              "action"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "configFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "mcp",
+                  "hooks"
+                ]
+              },
+              "action": {
+                "enum": [
+                  "create",
+                  "update",
+                  "unchanged",
+                  "delete"
+                ]
+              },
+              "changes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "conflicts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "path",
+              "kind",
+              "action",
+              "changes",
+              "conflicts"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "executables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "hook",
+                  "mcp"
+                ]
+              },
+              "target": {
+                "enum": [
+                  "claude",
+                  "codex",
+                  "copilot",
+                  "cursor"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "target",
+              "name",
+              "detail",
+              "command"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "scan": {
+          "$ref": "#/$defs/scan"
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "reason": {
+                "enum": [
+                  "modified",
+                  "unmanaged",
+                  "merge"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "reason",
+              "message"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "written": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "removed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "skipped": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "written",
+            "removed",
+            "skipped"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "applied",
+        "dryRun",
+        "planHash",
+        "scope",
+        "targets",
+        "packages",
+        "removedPackages",
+        "files",
+        "removals",
+        "configFiles",
+        "executables",
+        "scan",
+        "conflicts"
+      ],
+      "additionalProperties": true
+    },
+    "initData": {
+      "type": "object",
+      "properties": {
+        "manifestPath": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "manifestPath",
+        "name",
+        "targets",
+        "created"
+      ],
+      "additionalProperties": true
+    },
+    "listData": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "enum": [
+            "project",
+            "user"
+          ]
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "identity": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "source": {
+                "enum": [
+                  "git",
+                  "local"
+                ]
+              },
+              "ref": {
+                "type": "string"
+              },
+              "commit": {
+                "type": "string"
+              },
+              "resolvedTag": {
+                "type": "string"
+              },
+              "direct": {
+                "type": "boolean"
+              },
+              "targets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "mergedFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "identity",
+              "name",
+              "source",
+              "direct",
+              "targets",
+              "files",
+              "mergedFiles"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "scope",
+        "packages"
+      ],
+      "additionalProperties": true
+    },
+    "outdatedData": {
+      "type": "object",
+      "properties": {
+        "packages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "identity": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "current": {
+                "type": "string"
+              },
+              "wanted": {
+                "type": "string"
+              },
+              "latest": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "semver",
+                  "literal",
+                  "none"
+                ]
+              },
+              "outdated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "identity",
+              "name",
+              "current",
+              "wanted",
+              "latest",
+              "kind",
+              "outdated"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "packages"
+      ],
+      "additionalProperties": true
+    },
+    "searchData": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "registry": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "tools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nativePlugin": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "registry",
+              "source"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "registry": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "registry",
+              "message"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "query",
+        "results",
+        "failures"
+      ],
+      "additionalProperties": true
+    },
+    "infoData": {
+      "type": "object",
+      "properties": {
+        "dep": {
+          "type": "string"
+        },
+        "identity": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        },
+        "layout": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "resolvedTag": {
+          "type": "string"
+        },
+        "treeSha256": {
+          "type": "string"
+        },
+        "contents": {
+          "$ref": "#/$defs/contents"
+        },
+        "mcpServers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "transport": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "size"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "scan": {
+          "$ref": "#/$defs/scan"
+        }
+      },
+      "required": [
+        "dep",
+        "identity",
+        "name",
+        "layout",
+        "contents",
+        "mcpServers",
+        "dependencies",
+        "files",
+        "scan"
+      ],
+      "additionalProperties": true
+    },
+    "scanData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/scan"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "target": {
+              "type": "string"
+            },
+            "filesScanned": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "target",
+            "filesScanned"
+          ],
+          "additionalProperties": true
+        }
+      ]
+    },
+    "registryData": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "server",
+            "git",
+            "path"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "url",
+        "kind"
+      ],
+      "additionalProperties": true
+    },
+    "registryListData": {
+      "type": "object",
+      "properties": {
+        "registries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/registryData"
+          }
+        }
+      },
+      "required": [
+        "registries"
+      ],
+      "additionalProperties": true
+    },
+    "registryExportData": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "enum": [
+            "claude",
+            "codex",
+            "copilot",
+            "cursor"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "written": {
+          "type": "boolean"
+        },
+        "entries": {
+          "type": "integer"
+        },
+        "marketplace": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "format",
+        "path",
+        "written",
+        "entries",
+        "marketplace"
+      ],
+      "additionalProperties": true
+    },
+    "versionData": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "coreVersion": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "schemaVersion",
+        "coreVersion",
+        "node"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

@@ -124,17 +124,21 @@ La liste des registres est le seul fichier propre à `ahub` : `~/.config/ahub/co
 
 ## Interopérabilité avec `apm`
 
-Testée contre `apm` 0.35.0 (`test/interop.test.ts`, activé par `AHUB_INTEROP_APM`) :
+Vérifiée contre `apm` 0.35.0, dans les deux sens : `apm install` accepte un projet installé par `ahub`, et `ahub` lit et rejoue un projet installé par `apm`.
 
-- `apm install` accepte un projet installé par `ahub` ;
-- `ahub` lit et rejoue un projet installé par `apm`.
+- Automatisé (`test/interop.test.ts`, activé par `AHUB_INTEROP_APM`) : un paquet local, hors ligne.
+- Essayé à la main le 14 novembre 2026 : un paquet dans un sous-dossier d'un dépôt GitHub public, avec un hook et un serveur MCP.
+
+Pour y parvenir, `ahub` écrit comme `apm` trois détails que la spécification laisse ouverts : `repo_url: _local/<dossier>` pour un paquet local, le champ `mcp_target_servers`, et `"type": "stdio"` dans `.mcp.json`. Il lit aussi la forme d'identité d'`apm` (`repo_url` sans hôte, `host` à part).
 
 Limites constatées :
 
-- Le test couvre un paquet local (hors ligne). Les paquets git distants n'ont pas été testés contre `apm`.
-- Les deux outils n'écrivent pas le même fichier d'agent pour Claude Code : `ahub` ajoute le champ `name:` que la documentation de Claude Code exige. Alterner les deux outils sur un même projet réécrit donc ce fichier à chaque passage.
-- `apm` tient un registre `deployments:` dans le lockfile ; `ahub` le conserve sans le mettre à jour. Évitez d'alterner les deux outils pour installer ou retirer des paquets d'un même projet.
-- `apm` ne conserve pas l'extension `x-ahub` du lockfile : après un `apm install`, `ahub` ne sait plus quelles entrées de configuration (hooks, MCP) il avait fusionnées.
+- Les deux outils n'écrivent pas le même fichier pour un agent ou une commande Claude Code (`ahub` ajoute le champ `name:` que la documentation de Claude Code exige). Alterner les deux outils réécrit donc ces fichiers à chaque passage.
+- Les hooks ne sont pas gérés de la même façon : `apm` les consigne dans `.claude/apm-hooks.json`, `ahub` dans le lockfile. Un hook posé par l'un n'est pas retiré par l'autre.
+- `apm` tient un registre `deployments:` dans le lockfile ; `ahub` le conserve sans le mettre à jour.
+- `apm` ne conserve pas l'extension `x-ahub` : après un `apm install`, `ahub` ne sait plus quelles entrées de configuration il avait fusionnées.
+
+En pratique : les deux outils lisent le même projet, mais choisissez-en un pour installer et retirer.
 
 ## Développement
 
@@ -148,7 +152,7 @@ npm install
 npm test
 ```
 
-La CI de ce dépôt ne peut passer sur GitHub qu'une fois `@agenteca/core` publié sur npm.
+En CI, `agenteca-core` est cloné à côté de ce dépôt et relié par un espace de travail npm : aucun paquet publié n'est nécessaire.
 
 ## Licence
 

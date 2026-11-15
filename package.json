@@ -3,18 +3,58 @@
   "version": "0.1.0",
   "description": "ahub: installs and updates AI agent packages from git repositories into Claude Code, Codex, GitHub Copilot and Cursor.",
   "license": "Apache-2.0",
+  "author": "Agenteca <agenteca@proton.me>",
+  "homepage": "https://github.com/agenteca/agenteca-cli#readme",
+  "bugs": {
+    "url": "https://github.com/agenteca/agenteca-cli/issues"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "ai-agents",
+    "cli",
+    "openapm",
+    "apm",
+    "agent-skills",
+    "mcp",
+    "claude-code",
+    "codex",
+    "github-copilot",
+    "cursor",
+    "package-manager"
+  ],
   "type": "module",
-  "engines": { "node": ">=22" },
-  "bin": { "ahub": "./dist/bin.js" },
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "ahub": "./dist/bin.js"
+  },
   "main": "./dist/client.js",
   "types": "./dist/client.d.ts",
   "exports": {
-    ".": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
-    "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
+    ".": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
     "./schemas/cli-output.v1.schema.json": "./schemas/cli-output.v1.schema.json"
   },
-  "files": ["dist", "schemas", "CHANGELOG.md"],
-  "repository": { "type": "git", "url": "git+https://github.com/agenteca/agenteca-cli.git" },
+  "files": [
+    "dist",
+    "schemas",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agenteca/agenteca-cli.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

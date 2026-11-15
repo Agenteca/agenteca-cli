@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { createInterface } from 'node:readline/promises';
 import { type IO, run } from './cli.js';
+import { t } from './i18n.js';
 
 const isTTY = process.stdin.isTTY === true && process.stdout.isTTY === true;
 const io: IO = {
@@ -26,7 +27,9 @@ run(process.argv.slice(2), io).then(
     process.exitCode = code;
   },
   (e: unknown) => {
-    process.stderr.write(`Erreur interne : ${e instanceof Error ? (e.stack ?? e.message) : String(e)}\n`);
+    process.stderr.write(
+      t('Internal error: {0}\n', [e instanceof Error ? (e.stack ?? e.message) : String(e)]),
+    );
     process.exitCode = 1;
   },
 );

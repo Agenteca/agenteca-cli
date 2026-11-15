@@ -45,6 +45,6 @@ describe('client du binaire réel (dist/bin.js)', () => {
   it('signale clairement un binaire introuvable', async () => {
     const client = new AhubClient({ bin: 'ahub-binaire-absent' });
     await expect(client.version()).rejects.toBeInstanceOf(AhubClientError);
-    await expect(client.version()).rejects.toThrowError(/introuvable/);
+    await expect(client.version()).rejects.toThrowError(/binary not found/);
   });
 });

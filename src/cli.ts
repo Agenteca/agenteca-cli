@@ -5,6 +5,7 @@ import {
   canonicalDepString,
   createContext,
   type DepRef,
+  detectLocale,
   detectTargets,
   discardInstall,
   exportMarketplace,
@@ -18,18 +19,22 @@ import {
   loadConfig,
   loadLock,
   loadManifest,
+  type Locale,
+  LOCALES,
   ManifestFile,
   type MarketplaceFormat,
   parseCliPackageArg,
   parseDepString,
-  prepareInstall,
+  parseLocale,
   type PreparedInstall,
+  prepareInstall,
   type ProjectContext,
   type RegistryConfig,
   registryNameFromUrl,
   saveConfig,
   scanFiles,
   searchRegistries,
+  setLocale,
   summarizeFindings,
   SUPPORTED_TARGETS,
   type Target,
@@ -60,6 +65,7 @@ import {
   type VersionData,
   type Warning,
 } from './types.js';
+import { t } from './i18n.js';
 
 /** Entrées-sorties injectables : la CLI se teste sans lancer de processus. */
 export interface IO {
@@ -109,15 +115,15 @@ function parseTools(value: string | undefined): Target[] | undefined {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)) {
-    const t = raw === 'vscode' ? 'copilot' : raw;
-    if (t === 'all') return [...SUPPORTED_TARGETS];
-    if (!(SUPPORTED_TARGETS as readonly string[]).includes(t)) {
+    const name = raw === 'vscode' ? 'copilot' : raw;
+    if (name === 'all') return [...SUPPORTED_TARGETS];
+    if (!(SUPPORTED_TARGETS as readonly string[]).includes(name)) {
       throw new AhubError(
         'USAGE',
-        `outil inconnu « ${raw} ». Valeurs : ${SUPPORTED_TARGETS.join(', ')}, all.`,
+        t('unknown tool "{0}". Values: {1}, all.', [raw, SUPPORTED_TARGETS.join(', ')]),
       );
     }
-    if (!out.includes(t as Target)) out.push(t as Target);
+    if (!out.includes(name as Target)) out.push(name as Target);
   }
   return out;
 }
@@ -215,8 +221,23 @@ async function collectFiles(
   return out;
 }
 
+/**
+ * Language of the messages: `--lang <code>` first, then AHUB_LANG and the usual locale variables.
+ * Read before the commands are declared, because their help texts are translated too.
+ */
+function requestedLocale(argv: string[], env: NodeJS.ProcessEnv): Locale {
+  const i = argv.findIndex((a) => a === '--lang' || a.startsWith('--lang='));
+  if (i >= 0) {
+    const value = argv[i]!.includes('=') ? argv[i]!.slice('--lang='.length) : argv[i + 1];
+    const locale = parseLocale(value);
+    if (locale) return locale;
+  }
+  return detectLocale(env);
+}
+
 /** Point d'entrée de la CLI. Retourne le code de sortie. */
 export async function run(argv: string[], io: IO): Promise<number> {
+  setLocale(requestedLocale(argv, io.env));
   let exitCode: number = EXIT.OK;
   const wantsJson = argv.includes('--json');
   let usageOutput = '';
@@ -238,7 +259,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
     } else {
       if (o.human) io.out(o.human.endsWith('\n') ? o.human : `${o.human}\n`);
       if (warnings.length > 0) io.err(render.warnings(warnings));
-      if (o.error) io.err(`Erreur : ${o.error.message}\n`);
+      if (o.error) io.err(t('Error: {0}\n', [o.error.message]));
     }
     exitCode = o.exit ?? (o.error ? exitCodeFor(o.error.code) : EXIT.OK);
   };
@@ -274,7 +295,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
 
   const interactive = (opts: CommonOpts): boolean => io.isTTY && !opts.json && typeof io.ask === 'function';
   const yes = async (question: string): Promise<boolean> =>
-    /^(o|oui|y|yes)$/i.test((await io.ask!(`${question} [o/N] `)).trim());
+    /^(y|yes|o|oui|s|si|sí|是|हाँ)$/i.test((await io.ask!(t('{0} [y/N] ', [question]))).trim());
 
   /** Traduit un argument de `add` en dépendance, en passant par les registres si besoin. */
   const resolvePackageArg = async (arg: string, ctx: ProjectContext): Promise<DepRef> => {
@@ -284,7 +305,10 @@ export async function run(argv: string[], io: IO): Promise<number> {
     if (config.registries.length === 0) {
       throw new AhubError(
         'NOT_FOUND',
-        `« ${arg} » ressemble à un nom de catalogue, mais aucun registre n’est configuré. Utilisez propriétaire/dépôt, ou « ahub registry add <url> ».`,
+        t(
+          '"{0}" looks like a catalog name, but no registry is configured. Use owner/repo, or "ahub registry add <url>".',
+          [arg],
+        ),
       );
     }
     const found = await searchRegistries(
@@ -295,16 +319,22 @@ export async function run(argv: string[], io: IO): Promise<number> {
     );
     const matches = found.entries.filter((e) => e.name === parsed.name);
     if (matches.length === 0) {
-      const failed = found.failures.map((f) => `${f.registry} : ${f.message}`).join(' ; ');
+      const failed = found.failures.map((f) => `${f.registry}: ${f.message}`).join('; ');
       throw new AhubError(
         'NOT_FOUND',
-        `aucun paquet « ${parsed.name} » dans ${parsed.registry ? `le registre « ${parsed.registry} »` : 'les registres configurés'}${failed ? ` (registres en échec — ${failed})` : ''}`,
+        (parsed.registry
+          ? t('no package "{0}" in registry "{1}"', [parsed.name, parsed.registry])
+          : t('no package "{0}" in the configured registries', [parsed.name])) +
+          (failed ? t(' (failed registries: {0})', [failed]) : ''),
       );
     }
     if (matches.length > 1) {
       throw new AhubError(
         'USAGE',
-        `« ${parsed.name} » existe dans plusieurs registres : ${matches.map((m) => `${m.name}@${m.registry}`).join(', ')}. Précisez nom@registre.`,
+        t('"{0}" exists in several registries: {1}. Specify name@registry.', [
+          parsed.name,
+          matches.map((m) => `${m.name}@${m.registry}`).join(', '),
+        ]),
       );
     }
     return parseDepString(matches[0]!.source);
@@ -337,19 +367,23 @@ export async function run(argv: string[], io: IO): Promise<number> {
 
       if (opts.dryRun) {
         await discardInstall(prepared);
-        return { data, warnings, human: `${render.plan(data)}\nSimulation : rien n’a été écrit.` };
+        return { data, warnings, human: t('{0}\nDry run: nothing was written.', [render.plan(data)]) };
       }
       if (opts.expectPlan && opts.expectPlan !== prepared.planHash) {
         return stop({
           code: 'PLAN_CHANGED',
-          message:
-            'le contenu a changé depuis le plan approuvé : relancez avec --dry-run pour voir le nouveau plan',
+          message: t(
+            'the content changed since the approved plan: run again with --dry-run to see the new plan',
+          ),
         });
       }
       if (prepared.blocked && !opts.allowUnsafe) {
         return stop({
           code: 'SCAN_BLOCKED',
-          message: `le scan de sécurité a relevé ${data.scan.summary.critical} constat(s) critique(s) : rien n’a été écrit. Contournement explicite : --allow-unsafe`,
+          message: t(
+            'the security scan found {0} critical finding(s): nothing was written. Explicit override: --allow-unsafe',
+            [data.scan.summary.critical],
+          ),
         });
       }
 
@@ -363,14 +397,17 @@ export async function run(argv: string[], io: IO): Promise<number> {
       if (uncovered().length > 0) {
         if (interactive(opts)) {
           for (const c of uncovered()) {
-            if (await yes(`${c.message}. L’écraser ou le supprimer ?`)) overwrite.add(c.path);
+            if (await yes(t('{0}. Overwrite or delete it?', [c.message]))) overwrite.add(c.path);
           }
         }
         if (uncovered().length > 0) {
           return stop(
             {
               code: 'FILE_MODIFIED',
-              message: `${uncovered().length} fichier(s) modifié(s) à la main ou non géré(s) : rien n’a été écrit. Accord explicite : --overwrite <chemin> (ou --force pour tous)`,
+              message: t(
+                '{0} file(s) edited by hand or unmanaged: nothing was written. Explicit agreement: --overwrite <path> (or --force for all)',
+                [uncovered().length],
+              ),
               details: { conflicts: uncovered() },
             },
             '',
@@ -382,13 +419,13 @@ export async function run(argv: string[], io: IO): Promise<number> {
           return stop(
             {
               code: 'CONFIRMATION_REQUIRED',
-              message: 'confirmation requise : relancez avec --yes (après un --dry-run pour lire le plan)',
+              message: t('confirmation required: run again with --yes (after a --dry-run to read the plan)'),
             },
             '',
           );
         }
-        if (!(await yes('Appliquer ces changements ?'))) {
-          return stop({ code: 'CONFIRMATION_REQUIRED', message: 'annulé : rien n’a été écrit' }, '');
+        if (!(await yes(t('Apply these changes?')))) {
+          return stop({ code: 'CONFIRMATION_REQUIRED', message: t('cancelled: nothing was written') }, '');
         }
       }
 
@@ -398,75 +435,89 @@ export async function run(argv: string[], io: IO): Promise<number> {
       });
       data.applied = true;
       data.result = { written: result.written, removed: result.removed, skipped: result.skipped };
-      return { data, warnings, human: changed ? render.applied(data) : 'Tout est à jour : rien à faire.' };
+      return {
+        data,
+        warnings,
+        human: changed ? render.applied(data) : t('Everything is up to date: nothing to do.'),
+      };
     });
 
   const program = new Command('ahub')
-    .description('Catalogue et gestionnaire d’agents IA pour Claude Code, Codex, GitHub Copilot et Cursor')
-    .version(CLI_VERSION, '-V, --version', 'affiche la version')
-    .helpOption('-h, --help', 'affiche l’aide')
-    .helpCommand('help [commande]', 'affiche l’aide d’une commande')
+    .description(t('Catalog and manager of AI agents for Claude Code, Codex, GitHub Copilot and Cursor'))
+    .version(CLI_VERSION, '-V, --version', t('show the version'))
+    .helpOption('-h, --help', t('show help'))
+    .helpCommand('help [command]', t('show help for a command'))
+    .addOption(
+      new Option('--lang <code>', t('language of the messages (default: from the environment)')).choices([
+        ...LOCALES,
+      ]),
+    )
     .exitOverride()
     .configureOutput({ writeOut: (s) => io.out(s), writeErr: (s) => (usageOutput += s) });
 
   const common = (cmd: Command): Command =>
     cmd
-      .option('--json', 'sortie JSON stable (contrat schemas/cli-output.v1.schema.json)')
-      .option('--cwd <dossier>', 'dossier du projet (défaut : dossier courant)')
-      .helpOption('-h, --help', 'affiche l’aide');
+      .option('--json', t('stable JSON output (contract schemas/cli-output.v1.schema.json)'))
+      .addOption(
+        new Option('--lang <code>', t('language of the messages (default: from the environment)')).choices([
+          ...LOCALES,
+        ]),
+      )
+      .option('--cwd <folder>', t('project folder (default: current folder)'))
+      .helpOption('-h, --help', t('show help'));
   const scoped = (cmd: Command): Command =>
-    common(cmd).option('-g, --global', 'portée utilisateur (~/.apm) au lieu du projet');
+    common(cmd).option('-g, --global', t('user scope (~/.apm) instead of the project'));
   const changing = (cmd: Command): Command =>
     scoped(cmd)
       .addOption(
-        new Option(
-          '--tool <liste>',
-          'outils cibles, séparés par des virgules : claude, codex, copilot, cursor, all',
-        ),
+        new Option('--tool <liste>', t('target tools, comma-separated: claude, codex, copilot, cursor, all')),
       )
-      .addOption(new Option('--target <liste>', 'alias de --tool').hideHelp())
-      .option('-y, --yes', 'applique sans demander confirmation')
-      .option('--dry-run', 'calcule et affiche le plan sans rien écrire')
+      .addOption(new Option('--target <liste>', t('alias of --tool')).hideHelp())
+      .option('-y, --yes', t('apply without asking for confirmation'))
+      .option('--dry-run', t('compute and show the plan without writing anything'))
+      .option('--expect-plan <hash>', t('apply only if the plan has this hash (planHash from a --dry-run)'))
+      .option('--allow-unsafe', t('deploy despite critical security findings'))
       .option(
-        '--expect-plan <empreinte>',
-        'n’applique que si le plan a cette empreinte (planHash d’un --dry-run)',
-      )
-      .option('--allow-unsafe', 'déploie malgré des constats de sécurité critiques')
-      .option(
-        '--overwrite <chemin>',
-        'accepte d’écraser ou de supprimer ce fichier modifié (répétable)',
+        '--overwrite <path>',
+        t('agree to overwrite or delete this edited file (repeatable)'),
         (v: string, acc: string[]) => [...acc, v],
         [] as string[],
       )
-      .option('--force', 'accepte d’écraser ou de supprimer tous les fichiers modifiés')
+      .option('--force', t('agree to overwrite or delete every edited file'))
       .option(
         '--legacy-skill-paths',
-        'écrit les skills dans .github/skills et .cursor/skills plutôt que .agents/skills',
+        t('write skills to .github/skills and .cursor/skills instead of .agents/skills'),
       );
   const withTool = <T extends ChangeOpts & { target?: string }>(o: T): T => {
     if (!o.tool && o.target) o.tool = o.target;
     return o;
   };
 
-  common(program.command('version').description('affiche les versions de la CLI et du contrat JSON')).action(
-    (opts: CommonOpts) =>
-      exec<VersionData>('version', opts, async () => {
-        const data: VersionData = {
-          version: CLI_VERSION,
-          schemaVersion: SCHEMA_VERSION,
-          coreVersion: AHUB_VERSION,
-          node: process.version,
-        };
-        return {
-          data,
-          human: `ahub ${data.version} (contrat JSON ${data.schemaVersion}, cœur ${data.coreVersion}, Node ${data.node})`,
-        };
-      }),
+  common(
+    program.command('version').description(t('show the versions of the CLI and of the JSON contract')),
+  ).action((opts: CommonOpts) =>
+    exec<VersionData>('version', opts, async () => {
+      const data: VersionData = {
+        version: CLI_VERSION,
+        schemaVersion: SCHEMA_VERSION,
+        coreVersion: AHUB_VERSION,
+        node: process.version,
+      };
+      return {
+        data,
+        human: t('ahub {0} (JSON contract {1}, core {2}, Node {3})', [
+          data.version,
+          data.schemaVersion,
+          data.coreVersion,
+          data.node,
+        ]),
+      };
+    }),
   );
 
-  scoped(program.command('init').description('crée le manifeste apm.yml'))
-    .option('--name <nom>', 'nom du projet (défaut : nom du dossier)')
-    .option('--tool <liste>', 'outils cibles à déclarer dans le manifeste')
+  scoped(program.command('init').description(t('create the apm.yml manifest')))
+    .option('--name <name>', t('project name (default: folder name)'))
+    .option('--tool <liste>', t('target tools to declare in the manifest'))
     .action((opts: CommonOpts & { name?: string }) =>
       exec<InitData>('init', opts, async () => {
         const ctx = contextFor(opts);
@@ -478,7 +529,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
             targets: existing.manifest.targets ?? [],
             created: false,
           };
-          return { data, human: `${ctx.manifestPath} existe déjà : inchangé.` };
+          return { data, human: t('{0} already exists: unchanged.', [ctx.manifestPath]) };
         }
         const targets = parseTools(opts.tool) ?? detectTargets(ctx.root, ctx.scope);
         const name = opts.name ?? (ctx.scope === 'user' ? 'global' : path.basename(ctx.root));
@@ -488,7 +539,10 @@ export async function run(argv: string[], io: IO): Promise<number> {
         const data: InitData = { manifestPath: ctx.manifestPath, name, targets, created: true };
         return {
           data,
-          human: `Créé : ${ctx.manifestPath}\nOutils cibles : ${targets.length > 0 ? targets.join(', ') : 'aucun détecté — précisez --tool à l’installation'}`,
+          human: t('Created: {0}\nTarget tools: {1}', [
+            ctx.manifestPath,
+            targets.length > 0 ? targets.join(', ') : t('none detected — name --tool when installing'),
+          ]),
         };
       }),
     );
@@ -496,8 +550,8 @@ export async function run(argv: string[], io: IO): Promise<number> {
   changing(
     program
       .command('add')
-      .description('ajoute un ou plusieurs paquets et les installe')
-      .argument('<paquet...>', 'propriétaire/dépôt[@tag|#ref], URL git, chemin local, ou nom[@registre]'),
+      .description(t('add one or more packages and install them'))
+      .argument('<package...>', t('owner/repo[@tag|#ref], git URL, local path, or name[@registry]')),
   ).action((pkgs: string[], opts: ChangeOpts) =>
     change('add', withTool(opts), async (ctx) => {
       const add: DepRef[] = [];
@@ -507,9 +561,9 @@ export async function run(argv: string[], io: IO): Promise<number> {
   );
 
   changing(
-    program.command('install').description('installe ce que décrit le manifeste, en rejouant le lockfile'),
+    program.command('install').description(t('install what the manifest describes, replaying the lockfile')),
   )
-    .option('--frozen', 'échoue si le lockfile ne couvre pas exactement le manifeste (usage en CI)')
+    .option('--frozen', t('fail if the lockfile does not cover the manifest exactly (for CI)'))
     .action((opts: ChangeOpts) =>
       change('install', withTool(opts), async () => (opts.frozen ? { frozen: true } : {})),
     );
@@ -517,8 +571,8 @@ export async function run(argv: string[], io: IO): Promise<number> {
   changing(
     program
       .command('update')
-      .description('met à jour tous les paquets, ou ceux indiqués')
-      .argument('[paquet...]', 'paquets à mettre à jour'),
+      .description(t('update every package, or the ones named'))
+      .argument('[package...]', t('packages to update')),
   ).action((pkgs: string[], opts: ChangeOpts) =>
     change('update', withTool(opts), async () => ({ update: pkgs.length > 0 ? pkgs : 'all' })),
   );
@@ -527,13 +581,13 @@ export async function run(argv: string[], io: IO): Promise<number> {
     program
       .command('remove')
       .alias('rm')
-      .description('retire des paquets et tous leurs fichiers')
-      .argument('<paquet...>', 'paquets à retirer'),
+      .description(t('remove packages and all their files'))
+      .argument('<package...>', t('packages to remove')),
   ).action((pkgs: string[], opts: ChangeOpts) =>
     change('remove', withTool(opts), async () => ({ remove: pkgs })),
   );
 
-  scoped(program.command('list').alias('ls').description('liste les paquets installés')).action(
+  scoped(program.command('list').alias('ls').description(t('list installed packages'))).action(
     (opts: CommonOpts) =>
       exec<ListData>('list', opts, async () => {
         const ctx = contextFor(opts);
@@ -542,22 +596,21 @@ export async function run(argv: string[], io: IO): Promise<number> {
       }),
   );
 
-  scoped(program.command('outdated').description('liste les mises à jour disponibles')).action(
-    (opts: CommonOpts) =>
-      exec<OutdatedData>('outdated', opts, async () => {
-        const data: OutdatedData = { packages: await listOutdated(contextFor(opts)) };
-        return { data, human: render.outdated(data) };
-      }),
+  scoped(program.command('outdated').description(t('list available updates'))).action((opts: CommonOpts) =>
+    exec<OutdatedData>('outdated', opts, async () => {
+      const data: OutdatedData = { packages: await listOutdated(contextFor(opts)) };
+      return { data, human: render.outdated(data) };
+    }),
   );
 
   common(
     program
       .command('search')
-      .description('cherche dans les registres configurés')
-      .argument('[termes...]', 'mots à chercher'),
+      .description(t('search the configured registries'))
+      .argument('[terms...]', t('words to search for')),
   )
-    .option('--registry <nom>', 'limite la recherche à un registre')
-    .option('--tool <outil>', 'ne garde que les paquets compatibles avec cet outil')
+    .option('--registry <name>', t('limit the search to one registry'))
+    .option('--tool <outil>', t('keep only the packages compatible with this tool'))
     .action((terms: string[], opts: CommonOpts & { registry?: string }) =>
       exec<SearchData>('search', opts, async () => {
         const ctx = contextFor(opts);
@@ -576,7 +629,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
         if (config.registries.length === 0)
           warnings.push({
             code: 'NO_REGISTRY',
-            message: 'aucun registre configuré : « ahub registry add <url> »',
+            message: t('no registry configured: "ahub registry add <url>"'),
           });
         return { data, warnings, human: render.search(data) };
       }),
@@ -585,10 +638,10 @@ export async function run(argv: string[], io: IO): Promise<number> {
   common(
     program
       .command('info')
-      .description('montre le contenu d’un paquet sans l’installer')
-      .argument('<paquet>', 'propriétaire/dépôt[@tag|#ref], URL, chemin ou nom[@registre]'),
+      .description(t('show the content of a package without installing it'))
+      .argument('<package>', t('owner/repo[@tag|#ref], URL, path or name[@registry]')),
   )
-    .option('--files', 'inclut le texte des fichiers')
+    .option('--files', t('include the text of the files'))
     .action((pkg: string, opts: CommonOpts & { files?: boolean }) =>
       exec<InfoData>('info', opts, async () => {
         const ctx = contextFor(opts);
@@ -626,11 +679,11 @@ export async function run(argv: string[], io: IO): Promise<number> {
   common(
     program
       .command('scan')
-      .description('analyse un dossier ou un paquet (Unicode caché, motifs suspects)')
-      .argument('[cible]', 'dossier, fichier ou paquet distant', '.'),
+      .description(t('scan a folder or a package (hidden Unicode, suspicious patterns)'))
+      .argument('[target]', t('folder, file or remote package'), '.'),
   )
-    .addOption(new Option('--format <format>', 'format de sortie').choices(['text', 'json', 'sarif']))
-    .option('--output <fichier>', 'écrit le rapport dans un fichier')
+    .addOption(new Option('--format <format>', t('output format')).choices(['text', 'json', 'sarif']))
+    .option('--output <file>', t('write the report to a file'))
     .action((target: string, opts: CommonOpts & { format?: string; output?: string }) =>
       exec<ScanCommandData>(
         'scan',
@@ -664,7 +717,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
             const sarif = JSON.stringify(toSarif(findings, CLI_VERSION), null, 2);
             if (opts.output) {
               await writeFile(path.resolve(io.cwd, opts.output), sarif + '\n');
-              return { data, human: `Rapport SARIF écrit : ${opts.output}`, exit };
+              return { data, human: t('SARIF report written: {0}', [opts.output]), exit };
             }
             return { data, raw: sarif, exit };
           }
@@ -675,20 +728,20 @@ export async function run(argv: string[], io: IO): Promise<number> {
 
   const registry = program
     .command('registry')
-    .description('gère les registres (catalogues) consultés par search et add');
+    .description(t('manage the registries (catalogs) used by search and add'));
 
   common(
     registry
       .command('add')
-      .description('ajoute un registre')
+      .description(t('add a registry'))
       .argument(
         '<url>',
-        'URL d’un serveur Agenteca, dépôt git publiant un marketplace.json, ou dossier local',
+        t('URL of an Agenteca server, git repository publishing a marketplace.json, or local folder'),
       ),
   )
-    .option('--name <nom>', 'nom du registre')
+    .option('--name <name>', t('registry name'))
     .addOption(
-      new Option('--kind <type>', 'type de registre (déduit de l’URL par défaut)').choices([
+      new Option('--kind <type>', t('registry type (inferred from the URL by default)')).choices([
         'server',
         'git',
         'path',
@@ -707,17 +760,20 @@ export async function run(argv: string[], io: IO): Promise<number> {
         if (config.registries.some((r) => r.name === reg.name))
           throw new AhubError(
             'USAGE',
-            `un registre « ${reg.name} » existe déjà (choisissez un autre --name)`,
+            t('a registry "{0}" already exists (choose another --name)', [reg.name]),
           );
         // Vérifié avant d'être enregistré : un registre illisible n'est pas ajouté.
         const { catalog } = await loadCatalog(reg, registryContext(ctx));
         config.registries.push(reg);
         await saveConfig(config, io.env);
-        return { data: reg, human: `Registre « ${reg.name} » ajouté (${catalog.entries.length} paquet(s)).` };
+        return {
+          data: reg,
+          human: t('Registry "{0}" added ({1} package(s)).', [reg.name, catalog.entries.length]),
+        };
       }),
     );
 
-  common(registry.command('list').alias('ls').description('liste les registres configurés')).action(
+  common(registry.command('list').alias('ls').description(t('list the configured registries'))).action(
     (opts: CommonOpts) =>
       exec<RegistryListData>('registry list', opts, async () => {
         const data: RegistryListData = { registries: (await loadConfig(io.env)).registries };
@@ -725,31 +781,32 @@ export async function run(argv: string[], io: IO): Promise<number> {
       }),
   );
 
-  common(registry.command('remove').alias('rm').description('retire un registre').argument('<nom>')).action(
-    (name: string, opts: CommonOpts) =>
-      exec<RegistryData>('registry remove', opts, async () => {
-        const config = await loadConfig(io.env);
-        const reg = config.registries.find((r) => r.name === name);
-        if (!reg) throw new AhubError('NOT_FOUND', `registre « ${name} » inconnu`);
-        config.registries = config.registries.filter((r) => r.name !== name);
-        await saveConfig(config, io.env);
-        return { data: reg, human: `Registre « ${name} » retiré.` };
-      }),
+  common(
+    registry.command('remove').alias('rm').description(t('remove a registry')).argument('<name>'),
+  ).action((name: string, opts: CommonOpts) =>
+    exec<RegistryData>('registry remove', opts, async () => {
+      const config = await loadConfig(io.env);
+      const reg = config.registries.find((r) => r.name === name);
+      if (!reg) throw new AhubError('NOT_FOUND', t('unknown registry "{0}"', [name]));
+      config.registries = config.registries.filter((r) => r.name !== name);
+      await saveConfig(config, io.env);
+      return { data: reg, human: t('Registry "{0}" removed.', [name]) };
+    }),
   );
 
   common(
     registry
       .command('export')
-      .description('exporte un catalogue au format de marketplace natif d’un outil')
-      .argument('<source>', 'nom d’un registre configuré, dossier local ou dépôt git'),
+      .description(t('export a catalog in the native marketplace format of a tool'))
+      .argument('<source>', t('name of a configured registry, local folder or git repository')),
   )
     .addOption(
-      new Option('--format <outil>', 'format cible')
+      new Option('--format <outil>', t('target format'))
         .choices(['claude', 'codex', 'copilot', 'cursor'])
         .makeOptionMandatory(),
     )
-    .option('--out <dossier>', 'écrit le fichier dans ce dossier, à l’emplacement attendu par l’outil')
-    .option('--all', 'inclut aussi les paquets qui ne sont pas des plugins natifs')
+    .option('--out <folder>', t('write the file in this folder, where the tool expects it'))
+    .option('--all', t('also include the packages that are not native plugins'))
     .action((source: string, opts: CommonOpts & { format: MarketplaceFormat; out?: string; all?: boolean }) =>
       exec<RegistryExportData>('registry export', opts, async () => {
         const ctx = contextFor(opts);
@@ -778,7 +835,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
           data,
           warnings: [...diagnostics, ...out.diagnostics],
           human: opts.out
-            ? `Écrit : ${path.join(opts.out, out.path)} (${data.entries} entrée(s))`
+            ? t('Written: {0} ({1} entries)', [path.join(opts.out, out.path), data.entries])
             : JSON.stringify(out.json, null, 2),
         };
       }),

@@ -343,9 +343,9 @@ describe('mode texte', () => {
     const sb = await sandbox({ [ID]: repo });
     const r = await sb.text(['add', 'acme/demo-pack', '--tool', 'claude']);
     expect(r.code).toBe(4);
-    expect(r.out).toContain('Fichiers à écrire');
-    expect(r.out).toContain('Éléments exécutables');
-    expect(r.err).toContain('confirmation requise');
+    expect(r.out).toContain('Files to write');
+    expect(r.out).toContain('Executable items');
+    expect(r.err).toContain('confirmation required');
     expect(await listTree(sb.cwd)).toEqual([]);
   });
 
@@ -354,16 +354,16 @@ describe('mode texte', () => {
     const sb = await sandbox({ [ID]: repo });
     const no = await sb.text(['add', 'acme/demo-pack', '--tool', 'claude'], { isTTY: true, answers: ['n'] });
     expect(no.code).toBe(4);
-    expect(no.questions).toEqual(['Appliquer ces changements ? [o/N] ']);
+    expect(no.questions).toEqual(['Apply these changes? [y/N] ']);
     expect(await listTree(sb.cwd)).toEqual([]);
 
     const yes = await sb.text(['add', 'acme/demo-pack', '--tool', 'claude'], { isTTY: true, answers: ['o'] });
     expect(yes.code).toBe(0);
     expect(yes.out).toContain('+ .claude/agents/reviewer.md');
-    expect(yes.out).toContain('serveur MCP');
-    expect(yes.out).toContain('Terminé');
+    expect(yes.out).toContain('MCP server');
+    expect(yes.out).toContain('Done');
     expect((await sb.text(['list'])).out).toContain('demo-pack');
-    expect((await sb.text(['install', '--yes'])).out).toContain('Tout est à jour');
+    expect((await sb.text(['install', '--yes'])).out).toContain('Everything is up to date');
   });
 
   it('demande un accord fichier par fichier pour un fichier modifié', async () => {
@@ -380,11 +380,11 @@ describe('mode texte', () => {
     expect(await listTree(sb.cwd)).toEqual(['apm.lock.yaml', 'apm.yml']);
   });
 
-  it('affiche l’aide en français', async () => {
+  it('affiche l’aide', async () => {
     const sb = await sandbox();
     const help = await sb.text(['--help']);
     expect(help.code).toBe(0);
-    expect(help.out).toContain('Catalogue et gestionnaire');
+    expect(help.out).toContain('Catalog and manager');
     expect(help.out).toContain('registry');
   });
 });

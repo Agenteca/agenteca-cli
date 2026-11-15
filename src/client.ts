@@ -73,9 +73,7 @@ export class AhubClient {
         (err, stdout, stderr) => {
           if (err && (err as NodeJS.ErrnoException).code === 'ENOENT') {
             return reject(
-              new AhubClientError(
-                `binaire « ${bin} » introuvable. Installez la CLI : npm install -g @agenteca/cli`,
-              ),
+              new AhubClientError(`"${bin}" binary not found. Install the CLI: npm install -g @agenteca/cli`),
             );
           }
           let envelope: Envelope<T>;
@@ -83,22 +81,16 @@ export class AhubClient {
             envelope = JSON.parse(stdout) as Envelope<T>;
           } catch {
             return reject(
-              new AhubClientError(
-                `sortie de ahub illisible${err ? ` (${err.message})` : ''}`,
-                stdout,
-                stderr,
-              ),
+              new AhubClientError(`unreadable ahub output${err ? ` (${err.message})` : ''}`, stdout, stderr),
             );
           }
           if (typeof envelope !== 'object' || envelope === null || typeof envelope.ok !== 'boolean') {
-            return reject(
-              new AhubClientError('sortie de ahub inattendue : enveloppe absente', stdout, stderr),
-            );
+            return reject(new AhubClientError('unexpected ahub output: no envelope', stdout, stderr));
           }
           if (String(envelope.schemaVersion).split('.')[0] !== SCHEMA_VERSION.split('.')[0]) {
             return reject(
               new AhubClientError(
-                `version de contrat incompatible : ahub parle ${envelope.schemaVersion}, ce client ${SCHEMA_VERSION}`,
+                `incompatible contract version: ahub speaks ${envelope.schemaVersion}, this client ${SCHEMA_VERSION}`,
               ),
             );
           }

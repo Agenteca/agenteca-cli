@@ -111,13 +111,13 @@ export async function sandbox(mirrors: Record<string, string> = {}): Promise<San
     try {
       envelope = JSON.parse(r.out);
     } catch {
-      throw new Error(`sortie non JSON pour « ${args.join(' ')} » :\n${r.out}\n${r.err}`);
+      throw new Error(`non-JSON output for "${args.join(' ')}":\n${r.out}\n${r.err}`);
     }
     expect(
       validateEnvelope(envelope),
       `${args.join(' ')} → ${JSON.stringify(validateEnvelope.errors, null, 1)}`,
     ).toBe(true);
-    expect(r.err, 'rien ne doit être écrit sur stderr en mode --json').toBe('');
+    expect(r.err, 'nothing must be written to stderr in --json mode').toBe('');
     return { code: r.code, envelope };
   };
   return { cwd, home, env, text, json };

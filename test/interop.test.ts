@@ -33,11 +33,11 @@ async function apm(cwd: string, home: string, args: string[]): Promise<string> {
   });
   const output = `${stdout}${stderr}`;
   // apm 0.35.0 exits with code 0 even when it fails: its output is read instead.
-  if (/\[x\]/.test(output)) throw new Error(`apm ${args.join(' ')} a échoué :\n${output}`);
+  if (/\[x\]/.test(output)) throw new Error(`apm ${args.join(' ')} failed:\n${output}`);
   return output;
 }
 
-describe.skipIf(!APM)('interopérabilité avec apm 0.35.0', () => {
+describe.skipIf(!APM)('interoperability with apm 0.35.0', () => {
   it('apm accepts a project installed by ahub', async () => {
     const sb = await sandbox();
     await writeTree(sb.cwd, LOCAL_PKG);

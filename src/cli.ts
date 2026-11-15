@@ -67,14 +67,14 @@ import {
 } from './types.js';
 import { t } from './i18n.js';
 
-/** Entrées-sorties injectables : la CLI se teste sans lancer de processus. */
+/** Injectable input and output: the CLI is tested without starting a process. */
 export interface IO {
   cwd: string;
   env: NodeJS.ProcessEnv;
   out(text: string): void;
   err(text: string): void;
   isTTY: boolean;
-  /** Pose une question et retourne la réponse ; absent hors terminal. */
+  /** Asks a question and returns the answer; absent outside a terminal. */
   ask?(question: string): Promise<string>;
 }
 
@@ -83,7 +83,7 @@ interface Outcome<T> {
   warnings?: Warning[];
   human?: string;
   error?: ErrorInfo;
-  /** Sortie brute à la place de l'enveloppe (rapport SARIF). */
+  /** Raw output instead of the envelope (SARIF report). */
   raw?: string;
   exit?: number;
 }
@@ -200,7 +200,7 @@ function hasChanges(p: PreparedInstall): boolean {
   );
 }
 
-/** Parcourt un dossier pour le scan, sans suivre de lien symbolique. */
+/** Walks a folder for the scan, without following symbolic links. */
 async function collectFiles(
   root: string,
   rel = '',
@@ -235,7 +235,7 @@ function requestedLocale(argv: string[], env: NodeJS.ProcessEnv): Locale {
   return detectLocale(env);
 }
 
-/** Point d'entrée de la CLI. Retourne le code de sortie. */
+/** Entry point of the CLI. Returns the exit code. */
 export async function run(argv: string[], io: IO): Promise<number> {
   setLocale(requestedLocale(argv, io.env));
   let exitCode: number = EXIT.OK;
@@ -297,7 +297,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
   const yes = async (question: string): Promise<boolean> =>
     /^(y|yes|o|oui|s|si|sí|是|हाँ)$/i.test((await io.ask!(t('{0} [y/N] ', [question]))).trim());
 
-  /** Traduit un argument de `add` en dépendance, en passant par les registres si besoin. */
+  /** Turns an argument of `add` into a dependency, going through the registries if needed. */
   const resolvePackageArg = async (arg: string, ctx: ProjectContext): Promise<DepRef> => {
     const parsed = parseCliPackageArg(arg);
     if (parsed.type === 'dep') return parseDepString(parsed.dep);
@@ -340,7 +340,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
     return parseDepString(matches[0]!.source);
   };
 
-  /** Déroulé commun à add, install, update et remove : plan, garde-fous, confirmation, application. */
+  /** Flow shared by add, install, update and remove: plan, safeguards, confirmation, application. */
   const change = async (
     command: string,
     opts: ChangeOpts,
@@ -762,7 +762,7 @@ export async function run(argv: string[], io: IO): Promise<number> {
             'USAGE',
             t('a registry "{0}" already exists (choose another --name)', [reg.name]),
           );
-        // Vérifié avant d'être enregistré : un registre illisible n'est pas ajouté.
+        // Checked before being recorded: an unreadable registry is not added.
         const { catalog } = await loadCatalog(reg, registryContext(ctx));
         config.registries.push(reg);
         await saveConfig(config, io.env);

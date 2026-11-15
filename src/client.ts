@@ -16,9 +16,9 @@ import { SCHEMA_VERSION } from './types.js';
 export * from './types.js';
 
 export interface AhubClientOptions {
-  /** Chemin ou nom du binaire (défaut : `ahub`, cherché dans le PATH). */
+  /** Path or name of the binary (default: `ahub`, looked up in the PATH). */
   bin?: string;
-  /** Arguments préfixes, par exemple `['/chemin/vers/bin.js']` quand `bin` vaut `node`. */
+  /** Prefix arguments, for example `['/path/to/bin.js']` when `bin` is `node`. */
   binArgs?: string[];
   cwd?: string;
   env?: NodeJS.ProcessEnv;
@@ -29,11 +29,11 @@ export interface ChangeOptions {
   tools?: Tool[];
   global?: boolean;
   allowUnsafe?: boolean;
-  /** Chemins en conflit que l'utilisateur accepte d'écraser. */
+  /** Conflicting paths that the user agrees to overwrite. */
   overwrite?: string[];
 }
 
-/** Erreur de transport : le binaire est introuvable ou sa sortie n'est pas une enveloppe valide. */
+/** Transport error: the binary cannot be found or its output is not a valid envelope. */
 export class AhubClientError extends Error {
   constructor(
     message: string,
@@ -46,16 +46,16 @@ export class AhubClientError extends Error {
 }
 
 /**
- * Client minimal de `ahub --json`, sans autre dépendance que Node.
- * Les extensions (MCP, VS Code…) passent toutes par lui : la logique reste dans la CLI.
+ * Minimal client of `ahub --json`, with no dependency but Node.
+ * The extensions (MCP, VS Code…) all go through it: the logic stays in the CLI.
  *
- * Une enveloppe `ok: false` n'est pas une exception : elle est retournée telle
- * quelle, pour que l'appelant lise `error.code` (par exemple `CONFIRMATION_REQUIRED`).
+ * An `ok: false` envelope is not an exception: it is returned as
+ * is, so that the caller reads `error.code` (for example `CONFIRMATION_REQUIRED`).
  */
 export class AhubClient {
   constructor(private readonly options: AhubClientOptions = {}) {}
 
-  /** Exécute `ahub <args> --json` et retourne l'enveloppe. */
+  /** Runs `ahub <args> --json` and returns the envelope. */
   run<T>(args: string[], opts: { cwd?: string } = {}): Promise<Envelope<T>> {
     const bin = this.options.bin ?? 'ahub';
     const fullArgs = [...(this.options.binArgs ?? []), ...args, '--json'];
@@ -140,7 +140,7 @@ export class AhubClient {
     return this.run(['scan', target]);
   }
 
-  /** Calcule le plan sans rien écrire. Le `planHash` retourné sert ensuite à `apply`. */
+  /** Computes the plan without writing anything. The returned `planHash` is then used by `apply`. */
   plan(
     kind: 'add' | 'install' | 'update' | 'remove',
     packages: string[] = [],
@@ -149,7 +149,7 @@ export class AhubClient {
     return this.run([kind, ...packages, '--dry-run', ...this.changeArgs(o)]);
   }
 
-  /** Applique un plan déjà montré à l'utilisateur ; refusé (`PLAN_CHANGED`) si le contenu a changé entre-temps. */
+  /** Applies a plan already shown to the user; refused (`PLAN_CHANGED`) if the content changed in between. */
   apply(
     kind: 'add' | 'install' | 'update' | 'remove',
     packages: string[],

@@ -1,7 +1,7 @@
 /**
- * Types du contrat `ahub --json` (schéma : schemas/cli-output.v1.schema.json).
- * Ce fichier ne dépend d'aucun autre module : il est partagé par la CLI et
- * par le client utilisé dans les extensions.
+ * Types of the `ahub --json` contract (schema: schemas/cli-output.v1.schema.json).
+ * This file depends on no other module: it is shared by the CLI and
+ * by the client used in the extensions.
  */
 
 export const SCHEMA_VERSION = '1.0';
@@ -25,7 +25,7 @@ export type ErrorCode =
   | 'REGISTRY_FAILED'
   | 'INTERNAL';
 
-/** Codes de sortie du processus. */
+/** Exit codes of the process. */
 export const EXIT = {
   OK: 0,
   ERROR: 1,
@@ -134,11 +134,11 @@ export interface ConflictData {
   message: string;
 }
 
-/** Données de `add`, `install`, `update` et `remove` : le plan, puis son résultat. */
+/** Data of `add`, `install`, `update` and `remove`: the plan, then its result. */
 export interface ChangeData {
   applied: boolean;
   dryRun: boolean;
-  /** À repasser avec `--expect-plan` pour appliquer exactement ce qui a été montré. */
+  /** To pass back with `--expect-plan` to apply exactly what was shown. */
   planHash: string;
   scope: 'project' | 'user';
   targets: Tool[];

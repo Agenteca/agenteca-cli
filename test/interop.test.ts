@@ -7,10 +7,10 @@ import type { ChangeData, ListData } from '../src/types.js';
 import { cleanupTmp, listTree, sandbox, writeTree } from './helpers.js';
 
 /**
- * Interopérabilité avec l'outil de référence `apm` (Microsoft APM).
+ * Interoperability with the reference tool `apm` (Microsoft APM).
  *
- * Ces tests ne tournent que si AHUB_INTEROP_APM pointe vers le binaire `apm`
- * (version épinglée : 0.35.0). Ils sont hors ligne : le paquet est local.
+ * These tests only run if AHUB_INTEROP_APM points to the `apm` binary
+ * (pinned version: 0.35.0). They are offline: the package is local.
  *
  *   python3 -m venv .venv && .venv/bin/pip install apm-cli==0.35.0
  *   AHUB_INTEROP_APM=$PWD/.venv/bin/apm npm test
@@ -32,13 +32,13 @@ async function apm(cwd: string, home: string, args: string[]): Promise<string> {
     env: { PATH: process.env.PATH, HOME: home, APM_NON_INTERACTIVE: '1' },
   });
   const output = `${stdout}${stderr}`;
-  // apm 0.35.0 sort avec le code 0 même en échec : on lit sa sortie.
+  // apm 0.35.0 exits with code 0 even when it fails: its output is read instead.
   if (/\[x\]/.test(output)) throw new Error(`apm ${args.join(' ')} a échoué :\n${output}`);
   return output;
 }
 
 describe.skipIf(!APM)('interopérabilité avec apm 0.35.0', () => {
-  it('apm accepte un projet installé par ahub', async () => {
+  it('apm accepts a project installed by ahub', async () => {
     const sb = await sandbox();
     await writeTree(sb.cwd, LOCAL_PKG);
     expect((await sb.json(['add', './local-pkg', '--tool', 'claude', '--yes'])).code).toBe(0);
@@ -48,7 +48,7 @@ describe.skipIf(!APM)('interopérabilité avec apm 0.35.0', () => {
     expect(lock).toContain('repo_url: _local/local-pkg');
   });
 
-  it('ahub lit et rejoue un projet installé par apm, puis apm l’accepte encore', async () => {
+  it('ahub reads and replays a project installed by apm, then apm still accepts it', async () => {
     const sb = await sandbox();
     await writeTree(sb.cwd, {
       ...LOCAL_PKG,
@@ -66,7 +66,7 @@ describe.skipIf(!APM)('interopérabilité avec apm 0.35.0', () => {
 
     const replay = await sb.json<ChangeData>(['install', '--yes']);
     expect(replay.code).toBe(0);
-    // Les deux outils déploient les mêmes chemins ; seul le contenu de l'agent diffère (ahub ajoute `name:`).
+    // Both tools deploy the same paths; only the content of the agent differs (ahub adds `name:`).
     expect(replay.envelope.data!.files.map((f) => [f.path, f.action])).toEqual([
       ['.claude/agents/reviewer.md', 'update'],
       ['.claude/skills/hello/SKILL.md', 'unchanged'],

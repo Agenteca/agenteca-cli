@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Le test du binaire réel a besoin de dist/ : on compile une fois avant la suite. */
+/** The test of the real binary needs dist/: it is compiled once before the suite. */
 export default function setup(): void {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   execFileSync(

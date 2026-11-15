@@ -71,12 +71,12 @@ export interface Sandbox {
   cwd: string;
   home: string;
   env: NodeJS.ProcessEnv;
-  /** Exécute la CLI en mode texte. */
+  /** Runs the CLI in text mode. */
   text(
     args: string[],
     opts?: { isTTY?: boolean; answers?: string[] },
   ): Promise<{ code: number; out: string; err: string; questions: string[] }>;
-  /** Exécute la CLI avec --json et valide la sortie contre le schéma du contrat. */
+  /** Runs the CLI with --json and validates the output against the contract's schema. */
   json<T = any>(args: string[]): Promise<{ code: number; envelope: Envelope<T> }>;
 }
 

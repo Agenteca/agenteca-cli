@@ -10,7 +10,7 @@ import type {
 } from './types.js';
 import { t } from './i18n.js';
 
-/** Rendu texte, pour les humains. Le contrat stable est la sortie --json, pas ce texte. */
+/** Text rendering, for humans. The stable contract is the --json output, not this text. */
 
 /** Columns a string takes in a terminal: CJK characters take two, combining marks none. */
 function displayWidth(text: string): number {

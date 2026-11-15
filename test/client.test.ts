@@ -7,8 +7,8 @@ import { cleanupTmp, demoPackage, gitRepo, listTree, sandbox, validateEnvelope }
 afterAll(cleanupTmp);
 const BIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'bin.js');
 
-describe('client du binaire réel (dist/bin.js)', () => {
-  it('pilote le cycle plan → application par le processus ahub', async () => {
+describe('client of the real binary (dist/bin.js)', () => {
+  it('drives the plan → apply cycle through the ahub process', async () => {
     const repo = await gitRepo(demoPackage('1.0.0'), 'v1.0.0');
     const sb = await sandbox({ 'github.com/acme/demo-pack': repo });
     const client = new AhubClient({ bin: process.execPath, binArgs: [BIN], cwd: sb.cwd, env: sb.env });

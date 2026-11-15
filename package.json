@@ -1,7 +1,7 @@
 {
   "name": "@agenteca/cli",
   "version": "0.1.0",
-  "description": "ahub : installe et met à jour des paquets d'agents IA depuis des dépôts git vers Claude Code, Codex, GitHub Copilot et Cursor.",
+  "description": "ahub: installs and updates AI agent packages from git repositories into Claude Code, Codex, GitHub Copilot and Cursor.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": { "node": ">=22" },

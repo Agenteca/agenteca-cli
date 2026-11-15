@@ -1,15 +1,17 @@
-# Journal des modifications
+# Changelog
 
-Ce projet suit [Semantic Versioning](https://semver.org/lang/fr/). Le contrat JSON a sa propre version (`schemaVersion`).
+This project follows [Semantic Versioning](https://semver.org/) and the
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. The JSON contract has its own version (`schemaVersion`).
 
-## [Non publié]
+## [Unreleased]
 
 ## [0.1.0] - 2026-11-10
 
-### Ajouté
+### Added
 
-- Commandes `init`, `add`, `install`, `list`, `outdated`, `update`, `remove`, `search`, `info`, `scan`, `registry add|list|remove|export`, `version`.
-- Contrat JSON 1.0 (`schemas/cli-output.v1.schema.json`), validé par les tests sur chaque commande.
-- Installation en deux temps : `--dry-run` puis `--yes --expect-plan <planHash>`.
-- Client TypeScript sans dépendance (`@agenteca/cli/client`).
-- Test d'interopérabilité avec `apm` 0.35.0.
+- Commands `init`, `add`, `install`, `list`, `outdated`, `update`, `remove`, `search`, `info`, `scan`, `registry add|list|remove|export`, `version`.
+- JSON contract 1.0 (`schemas/cli-output.v1.schema.json`), validated by the tests on every command.
+- Two-step installation: `--dry-run`, then `--yes --expect-plan <planHash>`.
+- Dependency-free TypeScript client (`@agenteca/cli/client`).
+- Interoperability test with `apm` 0.35.0.
+- Messages in English, French, Spanish, Chinese and Hindi: `--lang`, `AHUB_LANG`, then `LC_ALL` / `LC_MESSAGES` / `LANG`.

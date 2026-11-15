@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/agenteca/agenteca-cli/blob/main/schemas/cli-output.v1.schema.json",
   "title": "Sortie de « ahub --json », contrat v1",
-  "description": "Enveloppe unique de toute sortie --json de la CLI ahub. Politique de version : un ajout de champ ou de commande incrémente la version mineure de schemaVersion (1.x) ; un retrait ou un changement de sens incrémente la version majeure et change le nom de ce fichier. Les consommateurs doivent ignorer les champs inconnus.",
+  "description": "Single envelope of every --json output of the ahub CLI. Versioning policy: adding a field or a command increments the minor version of schemaVersion (1.x); removing a field or changing its meaning increments the major version and renames this file. Consumers must ignore unknown fields. Messages (error.message, warnings[].message) follow the language chosen with --lang or AHUB_LANG; codes never do.",
   "type": "object",
   "required": [
     "schemaVersion",
